@@ -112,6 +112,11 @@ class Preprocess:
             os.makedirs(edge_path)
         self.edge_df.write.mode('overwrite').parquet(edge_path)
 
+        # Save edgelist.txt
+        edgelist_path = os.path.join(self.processed_folder, 'roadnet', 'edgelist.txt')
+        edgelist_df = self.edge_df.select('Origin', 'Destination').toPandas()
+        edgelist_df.to_csv(edgelist_path, sep=" ", header=False, index=False)
+
         self.traj_df.show()
         self.edge_df.show()
 

@@ -15,13 +15,17 @@ class Preprocess:
 
         self.spark = SparkSession.builder \
             .appName("Preprocess") \
+            .config("spark.driver.memory", "4g") \
+            .config("spark.executor.memory", "4g") \
             .getOrCreate()
-        
+
+    def run(self): 
         self.__read_roadnet()
         self.preprocess_roadnet()
 
         self.__read_trajs()
         self.preprocess_trajs()
+        self.save()
 
     def __read_roadnet(self):
         self.edge_path = os.path.join(self.raw_folder, 'roadnet', 'edge_' + self.city + '.csv')
@@ -37,11 +41,15 @@ class Preprocess:
 
     def preprocess_roadnet(self):
         rdd_with_index = self.edge_df.rdd.zipWithIndex()
-        self.edge_df = rdd_with_index.map(lambda x: (x[1], *x[0])).toDF(["EdgeID"] + self.edge_df.columns)
-        self.edge_df = self.edge_df.withColumn("Origin", self.edge_df["Origin"].cast("int")) \
-                .withColumn("Destination", self.edge_df["Destination"].cast("int"))
+        df = rdd_with_index.map(lambda x: (x[1], *x[0])).toDF(["EdgeID"] + self.edge_df.columns)
+        df = df.withColumn("Origin", df["Origin"].cast("int")) \
+                .withColumn("Destination", df["Destination"].cast("int"))
 
-        pass
+        df = df.withColumn('Geometry', F.split(df['Geometry'], "[_\\-]"))
+        df = df.withColumn("Longitude", F.expr("filter(Geometry, (x, i) -> i % 2 == 0)").cast("array<double>"))
+        df = df.withColumn("Latitude", F.expr("filter(Geometry, (x, i) -> i % 2 == 1)").cast("array<double>"))
+        df = df.drop("Geometry")
+        self.edge_df = df
 
     def preprocess_trajs(self):
         df = self.traj_df
@@ -65,9 +73,9 @@ class Preprocess:
         node2edge = self.spark.sparkContext.broadcast(node2edge)
         # 2.1 map NodeID to EdgeID
         df = df.withColumn('Points', F.split(df['Points'], "[_\\-]"))
-        df = df.withColumn("Origins", F.expr("filter(Points, (x, i) -> i % 2 == 0)").cast("array<int>"))
-        df = df.withColumn("Destinations", F.expr("slice(Origins, 2, size(Origins)-1)"))
-        df = df.withColumn("Zipped", F.arrays_zip("Origins", "Destinations"))
+        df = df.withColumn("Nodes", F.expr("filter(Points, (x, i) -> i % 2 == 0)").cast("array<int>"))
+        df = df.withColumn("Destinations", F.expr("slice(Nodes, 2, size(Nodes)-1)"))
+        df = df.withColumn("Zipped", F.arrays_zip("Nodes", "Destinations"))
         map_udf = F.udf(lambda arr: [node2edge.value.get(node_pair, -1) for node_pair in arr], ArrayType(IntegerType()))
         df = df.withColumn("Edge_ID", map_udf("Zipped"))
         
@@ -80,26 +88,33 @@ class Preprocess:
         # To Do
         # df = df.withColumn("Speed", F.expr("transform(Time_Diff, (x, i) -> x / Time_Diff[i])"))
         
-        df = df.drop("Origins", "Destinations", 'Zipped', 'Points', 'Time_Diff')
+        df = df.drop("Destinations", 'Zipped', 'Points', 'Time_Diff')
+        self.traj_df = df
         # to do 
         # split the meta data and seq data
         # return pos_traj, time_traj
+        return
 
     def get_node2edge(self):
         node2edge = self.edge_df.rdd.map(lambda row: ((row["Origin"], row["Destination"]), row["EdgeID"])).collectAsMap()
         return node2edge
 
-    def save(self, data):
-        # Save data
-        pass
+    def save(self):
+        # save trajs as parquet
+        trajs_path = os.path.join(self.processed_folder, 'trajs', 'traj_' + self.data + '.parquet')
+        if not os.path.exists(trajs_path):
+            os.makedirs(trajs_path)
+        self.traj_df.write.mode('overwrite').parquet(trajs_path)
 
-    def run(self):
-        # Load data
-        data = self.spark.load_data(self.data_path)
-        # Preprocess data
-        data = self.preprocess(data)
-        # Save data
-        self.save(data)
+        # Save 
+        edge_path = os.path.join(self.processed_folder, 'roadnet', 'edge_' + self.city + '.parquet')
+        if not os.path.exists(edge_path):
+            os.makedirs(edge_path)
+        self.edge_df.write.mode('overwrite').parquet(edge_path)
+
+        self.traj_df.show()
+        self.edge_df.show()
 
 if __name__ == '__main__':
     preprocess = Preprocess()
+    preprocess.run()

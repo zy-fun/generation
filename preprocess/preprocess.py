@@ -82,7 +82,10 @@ class Preprocess:
         # 2.2 map Time (Node) to Time (Edge)
         df = df.withColumn("Time", F.expr("filter(Points, (x, i) -> i % 2 == 1)").cast("array<double>")) 
         df = df.withColumn("Time_Diff", F.expr("transform(slice(Time, 1, size(Time) - 1), (x, i) -> Time[i + 1]-x)"))
-        df = df.withColumn("Time", F.expr("slice(Time, 2, size(Time)-1)"))
+        # df = df.withColumn("Time", F.expr("slice(Time, 2, size(Time)-1)"))
+        df = df.withColumn("Hour", F.expr("transform(Time, x -> cast(x / 3600 as int) % 24)"))
+        df = df.withColumn("Minute", F.expr("transform(Time, x -> cast(x % 3600 / 60 as int))"))
+        df = df.withColumn("Second", F.expr("transform(Time, x -> cast(x % 60 as int))"))
 
         # 2.3 compute Speed On Edge
         # To Do

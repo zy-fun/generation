@@ -11,7 +11,7 @@ class Preprocess:
 
         self.city = 'shenzhen' if 'shenzhen' in self.data else 'jinan'
         self.raw_folder = 'dataset/raw/' + self.city
-        self.processed_folder = 'dataset/processed/' + self.city
+        self.processed_folder = 'dataset/processed/' + self.data
 
         self.spark = SparkSession.builder \
             .appName("Preprocess") \
@@ -101,13 +101,13 @@ class Preprocess:
 
     def save(self):
         # save trajs as parquet
-        trajs_path = os.path.join(self.processed_folder, 'trajs', 'traj_' + self.data + '.parquet')
+        trajs_path = os.path.join(self.processed_folder, 'trajs', 'traj.parquet')
         if not os.path.exists(trajs_path):
             os.makedirs(trajs_path)
         self.traj_df.write.mode('overwrite').parquet(trajs_path)
 
         # Save 
-        edge_path = os.path.join(self.processed_folder, 'roadnet', 'edge_' + self.city + '.parquet')
+        edge_path = os.path.join(self.processed_folder, 'roadnet', 'edge.parquet')
         if not os.path.exists(edge_path):
             os.makedirs(edge_path)
         self.edge_df.write.mode('overwrite').parquet(edge_path)

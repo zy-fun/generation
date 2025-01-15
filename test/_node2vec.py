@@ -12,11 +12,9 @@ from node2vec import Node2Vec
 
 # path param
 data = 'shenzhen_20201104'
-city = 'shenzhen' if 'shenzhen' in data else 'jinan'
-raw_folder = 'dataset/processed/' + city
-processed_folder = 'dataset/processed/' + city
+processed_folder = 'dataset/processed/' + data
 
-edge_path = os.path.join(raw_folder, 'roadnet', 'edge_' + city + '.parquet')
+edge_path = os.path.join(processed_folder, 'roadnet', 'edge.parquet')
 edge_df = pd.read_parquet(edge_path)
 edgelist_path = os.path.join(processed_folder, 'roadnet', 'edgelist.txt')
 

@@ -44,6 +44,7 @@ class Preprocess:
         df = rdd_with_index.map(lambda x: (x[1], *x[0])).toDF(["EdgeID"] + self.edge_df.columns)
         df = df.withColumn("Origin", df["Origin"].cast("int")) \
                 .withColumn("Destination", df["Destination"].cast("int"))
+        df = df.withColumn("Length", df["Length"].cast("double"))
 
         df = df.withColumn('Geometry', F.split(df['Geometry'], "[_\\-]"))
         df = df.withColumn("Longitude", F.expr("filter(Geometry, (x, i) -> i % 2 == 0)").cast("array<double>"))
@@ -53,6 +54,11 @@ class Preprocess:
 
     def preprocess_trajs(self):
         df = self.traj_df
+        df = df.withColumn('VehicleID', df["VehicleID"].cast('int'))
+        df = df.withColumn('TripID', df["TripID"].cast('int'))
+        df = df.withColumn('Length', df["Length"].cast('double'))
+        df = df.withColumn('Duration', df["Duration"].cast('double'))
+        df = df.withColumn('DepartureTime', df["DepartureTime"].cast('double'))
 
         # 1. filter trajs
         # filter trajs with length < 1 km
@@ -74,8 +80,8 @@ class Preprocess:
         # 2.1 map NodeID to EdgeID
         df = df.withColumn('Points', F.split(df['Points'], "[_\\-]"))
         df = df.withColumn("Nodes", F.expr("filter(Points, (x, i) -> i % 2 == 0)").cast("array<int>"))
-        df = df.withColumn("Destinations", F.expr("slice(Nodes, 2, size(Nodes)-1)"))
-        df = df.withColumn("Zipped", F.arrays_zip("Nodes", "Destinations"))
+        df = df.withColumn("Zipped", F.arrays_zip(F.expr("slice(Nodes, 1, size(Nodes)-1)"), F.expr("slice(Nodes, 2, size(Nodes)-1)")))
+
         map_udf = F.udf(lambda arr: [node2edge.value.get(node_pair, -1) for node_pair in arr], ArrayType(IntegerType()))
         df = df.withColumn("Edge_ID", map_udf("Zipped"))
         
@@ -91,6 +97,7 @@ class Preprocess:
         # To Do
         # df = df.withColumn("Speed", F.expr("transform(Time_Diff, (x, i) -> x / Time_Diff[i])"))
         
+        # df = df.drop("Destinations", 'Zipped', 'Points', 'Time_Diff')
         df = df.drop("Destinations", 'Zipped', 'Points', 'Time_Diff')
         self.traj_df = df
         # to do 
@@ -122,6 +129,8 @@ class Preprocess:
 
         self.traj_df.show()
         self.edge_df.show()
+        print(self.traj_df)
+        print(self.edge_df)
 
 if __name__ == '__main__':
     preprocess = Preprocess()

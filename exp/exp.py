@@ -67,12 +67,13 @@ class Exp(object):
 
             # self.model.train()
             epoch_time = time.time()
-            for i, (_, timeF) in enumerate(train_loader):
+            for i, (edge_seq, edge_feature, timeF) in enumerate(train_loader):
                 iter_count += 1
                 # model_optim.zero_grad()
-                
-                print(timeF.shape)
+                edge_seq = edge_seq.to(self.device)
+                edge_feature = edge_feature.to(self.device)
                 timeF = timeF.to(self.device)
+                exit()
             exit()
 
         return self.model

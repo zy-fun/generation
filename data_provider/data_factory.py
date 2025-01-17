@@ -10,10 +10,17 @@ root_dict = {
     'shenzhen_20201104': 'dataset/processed/shenzhen_20201104'
 }
 
-def data_provider(data, batch_size, split):
+def data_provider(args):
+    data = args.data
+    batch_size = args.batch_size
+    use_subset = args.use_subset
+
     Data = TrajDataset
     root_path = root_dict[data]
     dataset = Data(root_path)
+    if use_subset:
+        indices = list(range(int(len(dataset) * 0.01)))
+        dataset = Subset(dataset, indices)
 
     train = 0.9
     val = 0.05
@@ -22,21 +29,29 @@ def data_provider(data, batch_size, split):
     val_size = int(val * len(dataset))
     test_size = len(dataset) - train_size - val_size
     train_data, val_data, test_data = random_split(dataset, [train_size, val_size, test_size])
-    if split == 'train':
-        data_set = train_data
-    elif split == 'val':
-        data_set = val_data
-    elif split == 'test':
-        data_set = test_data
 
     shuffle_flag = False
     drop_last = False
-    batch_size = batch_size
 
-    data_loader = DataLoader(
-        data_set,
+    train_loader = DataLoader(
+        train_data,
         batch_size=batch_size,
         shuffle=shuffle_flag,
         num_workers=4,
         drop_last=drop_last)
-    return data_set, data_loader
+    
+    val_loader = DataLoader(
+        val_data,
+        batch_size=batch_size,
+        shuffle=shuffle_flag,
+        num_workers=4,
+        drop_last=drop_last)
+
+    test_loader = DataLoader(
+        test_data,
+        batch_size=batch_size,
+        shuffle=shuffle_flag,
+        num_workers=4,
+        drop_last=drop_last)
+
+    return train_data, train_loader, val_data, val_loader, test_data, test_loader

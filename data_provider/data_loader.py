@@ -60,7 +60,7 @@ class TrajDataset(Dataset):
         return len(self.timeF)
 
     def __getitem__(self, idx):
-        return self.edge_seq[idx], self.edge_features[self.edge_seq[idx]], self.timeF[idx]
+        return self.edge_seq[idx], self.edge_features[self.edge_seq[idx]], self.timeF[idx], self.timeF[idx][:, 0]
 
 if __name__ == "__main__":
     root_path = 'dataset/processed/shenzhen_20201104'

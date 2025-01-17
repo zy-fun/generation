@@ -80,10 +80,14 @@ class Preprocess:
         # 2.1 map NodeID to EdgeID
         df = df.withColumn('Points', F.split(df['Points'], "[_\\-]"))
         df = df.withColumn("Nodes", F.expr("filter(Points, (x, i) -> i % 2 == 0)").cast("array<int>"))
-        df = df.withColumn("Zipped", F.arrays_zip(F.expr("slice(Nodes, 1, size(Nodes)-1)"), F.expr("slice(Nodes, 2, size(Nodes)-1)")))
 
-        map_udf = F.udf(lambda arr: [node2edge.value.get(node_pair, -1) for node_pair in arr], ArrayType(IntegerType()))
-        df = df.withColumn("Edge_ID", map_udf("Zipped"))
+        rdd = df.rdd.map(lambda row: row.asDict())
+        rdd = rdd.map(lambda row: {**row, "Edge_ID": [node2edge.value.get(node_pair, -1) for node_pair in zip(row["Nodes"][:-2], row["Nodes"][1:])]})
+        df = rdd.toDF()
+        # old implementation using udf
+        # map_udf = F.udf(lambda arr: [node2edge.value.get(node_pair, -1) for node_pair in zip(arr[:-2], arr[1:])], ArrayType(IntegerType()))
+        # df = df.withColumn("Edge_ID", map_udf("Nodes"))  
+        df = df.filter(~F.array_contains(F.col("Edge_ID"), -1))
         
         # 2.2 map Time (Node) to Time (Edge)
         df = df.withColumn("Time", F.expr("filter(Points, (x, i) -> i % 2 == 1)").cast("array<double>")) 

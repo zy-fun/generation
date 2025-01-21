@@ -115,8 +115,8 @@ class EdgeEmbedding(nn.Module):
         self.position_embedding = PositionalEmbedding(d_model)
         self.dropout = nn.Dropout(p=dropout)
 
-    def from_pretrained(self, pretrained, freeze=True):
-        self.edge_embedding = nn.Embedding.from_pretrained(pretrained, freeze=freeze)
+    # def from_pretrained(self, pretrained, freeze=True):
+    #     self.edge_embedding = nn.Embedding.from_pretrained(pretrained, freeze=freeze)
 
     def forward(self, edge_seq, edge_feature):
         # usage:

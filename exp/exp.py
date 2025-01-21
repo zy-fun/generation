@@ -9,6 +9,7 @@ import numpy as np
 from models import Transformer
 from tqdm import tqdm
 from datetime import datetime, timedelta
+from utils.load_params import load_embeddings
 
 class Exp(object):
     def __init__(self, args):
@@ -16,14 +17,21 @@ class Exp(object):
 
         self.device = self._acquire_device()
         self.model = self._build_model().to(self.device)
+        # print(self.model.enc_embedding.edge_embedding.weight)
         self._get_data()
 
     def _build_model(self):
         self.model_dict = {
             'Transformer': Transformer,
         }
-        model = self.model_dict[self.args.model].Model(self.args).float()
-        # model.from_pretrained_embedding()
+        model = self.model_dict[self.args.model].Model
+        if self.args.use_pretrained:
+            emb_path = os.path.join('dataset/processed', self.args.data)
+            emb = torch.tensor(load_embeddings(emb_path, emb_type='cat'), dtype=torch.float32)
+            self.args.n_vocab, self.args.enc_emb = emb.shape
+            model = model(self.args, emb).to(self.device)
+        else:
+            model = model(self.args).to(self.device)
         return model
 
     def _acquire_device(self):

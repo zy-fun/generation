@@ -32,12 +32,13 @@ if __name__ == '__main__':
     parser.add_argument('--d_layers', type=int, required=False, default=1)
     parser.add_argument('--dropout', type=float, required=False, default=0.1)
     parser.add_argument('--activation', type=str, required=False, default='gelu')
+    parser.add_argument('--use_pretrained', type=bool, required=False, default=True)
 
-    parser.add_argument('--enc_emb', type=int, required=False, default=64)
+    parser.add_argument('--enc_emb', type=int, required=False, default=128, help='encoder embedding size, only functional when use_pretrained is False')
     parser.add_argument('--enc_dim', type=int, required=False, default=2)
     parser.add_argument('--dec_dim', type=int, required=False, default=4)
     parser.add_argument('--c_out', type=int, required=False, default=1)
-    parser.add_argument('--n_vocab', type=int, required=False, default=27411)
+    parser.add_argument('--n_vocab', type=int, required=False, default=27411, help='vocab size, only functional when use_pretrained is False')
 
     # optimization
     parser.add_argument('--batch_size', type=int, required=False, default=1,

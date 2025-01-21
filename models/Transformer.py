@@ -7,7 +7,7 @@ from layers.Embed import EdgeEmbedding
 import numpy as np
 
 class Model(nn.Module):
-    def __init__(self, configs):
+    def __init__(self, configs, pretrained_emb=None):
         super(Model, self).__init__()
         self.configs = configs
         d_model = configs.d_model
@@ -25,7 +25,7 @@ class Model(nn.Module):
         c_out = configs.c_out
 
         # Embedding
-        self.enc_embedding = EdgeEmbedding(n_vocab, enc_emb, enc_dim, d_model, dropout=dropout) 
+        self.enc_embedding = EdgeEmbedding(n_vocab, enc_emb, enc_dim, d_model, dropout=dropout, pretrained=pretrained_emb) 
         # Encoder
         self.encoder = Encoder(
             [
@@ -66,8 +66,8 @@ class Model(nn.Module):
             projection=nn.Linear(d_model, c_out, bias=True)
         )
 
-    def from_pretrained_embedding(self, pretrained):
-        self.enc_embedding.from_pretrained(pretrained, freeze=True)
+    # def from_pretrained_embedding(self, pretrained):
+    #     self.enc_embedding.from_pretrained(pretrained, freeze=True)
 
     def forward(self, enc_seq, enc_feature, dec_in):
         # Embedding

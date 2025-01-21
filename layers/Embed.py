@@ -120,10 +120,10 @@ class EdgeEmbedding(nn.Module):
 
     def forward(self, edge_seq, edge_feature):
         # usage:
-        # edge_seq: [SeqLen]
-        # edge_feature: [SeqLen, Feature]
+        # edge_seq: [Batch, SeqLen]
+        # edge_feature: [Batch, SeqLen, Feature]
         edge_seq = self.edge_embedding(edge_seq)
-        enc = torch.cat([edge_seq, edge_feature], -1)
+        enc = torch.cat([edge_seq, edge_feature], dim=-1)
         # the time to add position embedding is not so sure
         enc = self.mlp(enc)
         enc = enc + self.position_embedding(enc)

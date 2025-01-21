@@ -10,6 +10,7 @@ from models import Transformer
 from tqdm import tqdm
 from datetime import datetime, timedelta
 from utils.load_params import load_embeddings
+from layers.Loss import MaskedMSELoss
 
 class Exp(object):
     def __init__(self, args):
@@ -51,7 +52,8 @@ class Exp(object):
         return model_optim
 
     def _select_criterion(self):
-        criterion = nn.MSELoss()
+        # criterion = nn.MSELoss()
+        criterion = MaskedMSELoss()
         return criterion
 
     def _get_data(self):
@@ -70,16 +72,18 @@ class Exp(object):
         criterion = self._select_criterion()
         self.model.eval()
         with torch.no_grad():
-            for i, (edge_seq, edge_feature, timeF, y) in tqdm(enumerate(vali_loader), desc='Batches'):
+            for i, (edge_seq, edge_feature, timeF, y, y_mask) in tqdm(enumerate(vali_loader), desc='Batches'):
                 edge_seq = edge_seq.to(self.device)
                 edge_feature = edge_feature.to(self.device)
                 timeF = timeF.to(self.device)
                 y = y.to(self.device)
+                y_mask = y_mask.to(self.device)
 
                 out = self.model(edge_seq, edge_feature, timeF)
                 out = out.detach().cpu()
                 y = y.detach().cpu()
-                loss = criterion(out, y)
+                y_mask = y_mask.detach().cpu()
+                loss = criterion(out, y, y_mask)
                 total_loss.append(loss.item())
         total_loss = np.average(total_loss)
         self.model.train()
@@ -106,17 +110,20 @@ class Exp(object):
 
             self.model.train()
             epoch_time = time.time()
-            for i, (edge_seq, edge_feature, timeF, y) in enumerate(train_loader):
+            for i, (edge_seq, edge_feature, timeF, y, y_mask) in enumerate(train_loader):
                 # iter
                 iter_count += 1
                 model_optim.zero_grad()
+
                 edge_seq = edge_seq.to(self.device)
                 edge_feature = edge_feature.to(self.device)
                 timeF = timeF.to(self.device)
                 y = y.to(self.device)
+                y_mask = y_mask.to(self.device)
+                # print(edge_seq.shape, edge_feature.shape, timeF.shape, y.shape, y_mask.shape)
 
                 out = self.model(edge_seq, edge_feature, timeF)
-                loss = criterion(out, y)
+                loss = criterion(out, y, y_mask)
                 train_loss.append(loss.item())
                 loss.backward()
                 model_optim.step()
@@ -133,8 +140,8 @@ class Exp(object):
             print("Epoch: {} cost time: {}".format(epoch + 1, time.time() - epoch_time))
             y = (y.squeeze() + 0.5) * 86399
             out = (out.squeeze() + 0.5) * 86399
-            y = [str(timedelta(seconds=int(i))) for i in y.tolist()]
-            out = [str(timedelta(seconds=int(i))) for i in out.tolist()]
+            y = [str(timedelta(seconds=int(i))) for i in y[-1].tolist()]
+            out = [str(timedelta(seconds=int(i))) for i in out[-1].tolist()]
             print(y)
             print(out)
             train_loss = np.average(train_loss)

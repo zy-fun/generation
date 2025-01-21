@@ -4,8 +4,10 @@ import torch
 from exp.exp import Exp
 import random
 import numpy as np
+import time
 
 if __name__ == '__main__':
+    time_now = time.time()
     fix_seed = 2021
     random.seed(fix_seed)
     torch.manual_seed(fix_seed)
@@ -41,7 +43,7 @@ if __name__ == '__main__':
     parser.add_argument('--n_vocab', type=int, required=False, default=27411, help='vocab size, only functional when use_pretrained is False')
 
     # optimization
-    parser.add_argument('--batch_size', type=int, required=False, default=1,
+    parser.add_argument('--batch_size', type=int, required=False, default=8,
                         help='batch size')
     parser.add_argument('--learning_rate', type=float, required=False, default=0.001,)
     parser.add_argument('--train_epochs', type=int, required=False, default=10,)
@@ -61,8 +63,9 @@ if __name__ == '__main__':
 
     print('>>>>>>>start training : >>>>>>>>>>>>>>>>>>>>>>>>>>')
     exp.train()
-
-    exit()
+    
     print('>>>>>>>testing : <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<')
     exp.test()
     torch.cuda.empty_cache()
+    total_time = time.time() - time_now
+    print('total time: {:.4f}s'.format(total_time))

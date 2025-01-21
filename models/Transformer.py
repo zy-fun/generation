@@ -31,7 +31,7 @@ class Model(nn.Module):
             [
                 EncoderLayer(
                     AttentionLayer(
-                        FullAttention(False, attention_dropout=dropout,
+                        FullAttention(True, attention_dropout=dropout,
                                       output_attention=False), d_model, n_heads),
                     d_model=d_model,
                     d_ff=d_ff,
@@ -52,7 +52,7 @@ class Model(nn.Module):
                                         output_attention=False),
                         d_model, n_heads),
                     AttentionLayer(
-                        FullAttention(False, scale=None, attention_dropout=dropout,
+                        FullAttention(True, scale=None, attention_dropout=dropout,
                                         output_attention=False),
                         d_model, n_heads),
                     d_model=d_model,

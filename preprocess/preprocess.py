@@ -82,7 +82,7 @@ class Preprocess:
         df = df.withColumn("Nodes", F.expr("filter(Points, (x, i) -> i % 2 == 0)").cast("array<int>"))
 
         rdd = df.rdd.map(lambda row: row.asDict())
-        rdd = rdd.map(lambda row: {**row, "Edge_ID": [node2edge.value.get(node_pair, -1) for node_pair in zip(row["Nodes"][:-2], row["Nodes"][1:])]})
+        rdd = rdd.map(lambda row: {**row, "Edge_ID": [node2edge.value.get(node_pair, -1) for node_pair in zip(row["Nodes"][:-1], row["Nodes"][1:])]})
         df = rdd.toDF()
         # old implementation using udf
         # map_udf = F.udf(lambda arr: [node2edge.value.get(node_pair, -1) for node_pair in zip(arr[:-2], arr[1:])], ArrayType(IntegerType()))

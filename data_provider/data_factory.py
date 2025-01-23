@@ -30,7 +30,7 @@ def data_provider(args):
     root_path = root_dict[data]
     dataset = Data(root_path)
     if use_subset:
-        indices = list(range(int(len(dataset) * 0.05)))
+        indices = list(range(int(len(dataset) * 0.1)))
         dataset = Subset(dataset, indices)
 
     train = 0.9
@@ -39,33 +39,37 @@ def data_provider(args):
     train_size = int(train * len(dataset))
     val_size = int(val * len(dataset))
     test_size = len(dataset) - train_size - val_size
-    train_data, val_data, test_data = random_split(dataset, [train_size, val_size, test_size])
+    train_indices = list(range(train_size))
+    val_indices = list(range(train_size, train_size + val_size))
+    test_indices = list(range(train_size + val_size, len(dataset)))
 
-    shuffle_flag = False
-    drop_last = False
+    train_data, val_data, test_data = random_split(dataset, [train_size, val_size, test_size])
+    # train_data = Subset(dataset, list(train_indices))
+    # val_data = Subset(dataset, list(val_indices))
+    # test_data = Subset(dataset, list(test_indices))
 
     train_loader = DataLoader(
         train_data,
         batch_size=batch_size,
-        shuffle=shuffle_flag,
-        num_workers=4,
+        shuffle=True,
+        num_workers=8,
         drop_last=True,
         collate_fn=padding_collate_fn)
     
     val_loader = DataLoader(
         val_data,
         batch_size=batch_size,
-        shuffle=shuffle_flag,
-        num_workers=4,
-        drop_last=drop_last,
+        shuffle=False,
+        num_workers=8,
+        drop_last=False,
         collate_fn=padding_collate_fn)
 
     test_loader = DataLoader(
         test_data,
         batch_size=batch_size,
-        shuffle=shuffle_flag,
-        num_workers=4,
-        drop_last=drop_last,
+        shuffle=False,
+        num_workers=8,
+        drop_last=False,
         collate_fn=padding_collate_fn)
 
     return train_data, train_loader, val_data, val_loader, test_data, test_loader

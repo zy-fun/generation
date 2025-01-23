@@ -31,7 +31,7 @@ class Model(nn.Module):
             [
                 EncoderLayer(
                     AttentionLayer(
-                        FullAttention(True, attention_dropout=dropout,
+                        FullAttention(mask_flag=False, attention_dropout=dropout,
                                       output_attention=False), d_model, n_heads),
                     d_model=d_model,
                     d_ff=d_ff,
@@ -47,12 +47,14 @@ class Model(nn.Module):
         self.decoder = Decoder(
             [
                 DecoderLayer(
+                    # self attention
                     AttentionLayer(
-                        FullAttention(True, scale=None, attention_dropout=dropout,
+                        FullAttention(mask_flag=True, scale=None, attention_dropout=dropout,
                                         output_attention=False),
                         d_model, n_heads),
+                    # cross attention
                     AttentionLayer(
-                        FullAttention(True, scale=None, attention_dropout=dropout,
+                        FullAttention(mask_flag=False, scale=None, attention_dropout=dropout,
                                         output_attention=False),
                         d_model, n_heads),
                     d_model=d_model,
@@ -68,6 +70,17 @@ class Model(nn.Module):
 
     # def from_pretrained_embedding(self, pretrained):
     #     self.enc_embedding.from_pretrained(pretrained, freeze=True)
+    def encode(self, enc_seq, enc_feature):
+        enc_out = self.enc_embedding(enc_seq, enc_feature)
+        enc_out, attns = self.encoder(enc_out, attn_mask=None)
+        return enc_out
+
+    def decode(self, enc_out, dec_in):
+        dec_out = self.dec_embedding(dec_in)
+        dec_out = self.decoder(dec_out, enc_out, x_mask=None, cross_mask=None)
+        if self.configs.c_out == 1:
+            dec_out = dec_out.squeeze(-1)
+        return dec_out
 
     def forward(self, enc_seq, enc_feature, dec_in):
         # Embedding

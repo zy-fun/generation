@@ -10,6 +10,8 @@ from models import Transformer
 from tqdm import tqdm
 from datetime import datetime, timedelta
 from utils.load_params import load_embeddings
+from utils.tools import SmartSave, get_timeF
+from utils.metrics import metric
 from layers.Loss import MaskedMSELoss
 
 class Exp(object):
@@ -99,7 +101,7 @@ class Exp(object):
         time_now = time.time()
 
         train_steps = len(train_loader)
-        # early_stopping = EarlyStopping(patience=self.args.patience, verbose=True)
+        smart_save = SmartSave(verbose=True)
 
         model_optim = self._select_optimizer()
         criterion = self._select_criterion()
@@ -150,11 +152,60 @@ class Exp(object):
 
             print("Epoch: {0}, Steps: {1} | Train Loss: {2:.7f} Vali Loss: {3:.7f} Test Loss: {4:.7f}".format(
                 epoch + 1, train_steps, train_loss, vali_loss, test_loss))
+            smart_save(vali_loss, self.model, path)
 
-        # best_model_path = path + '/' + 'checkpoint.pth'
-        # self.model.load_state_dict(torch.load(best_model_path))
+        best_model_path = path + '/' + 'checkpoint.pth'
+        self.model.load_state_dict(torch.load(best_model_path))
         return self.model
 
     def test(self):
+        test_data, test_loader = self.test_data, self.test_loader
 
-        pass
+        preds = []
+        trues = []
+        # folder_path = './test_results/' + setting + '/'
+        # if not os.path.exists(folder_path):
+        #     os.makedirs(folder_path)
+
+        self.model.eval()
+        with torch.no_grad():
+             for i, (edge_seq, edge_feature, timeF, y, y_mask) in tqdm(enumerate(test_loader)):
+                edge_seq = edge_seq.to(self.device)
+                edge_feature = edge_feature.to(self.device)
+                dec_in = timeF.to(self.device)[:, 0, :].unsqueeze(1)
+                y = y.to(self.device)
+                y_mask = y_mask.to(self.device)
+
+                # autoregressive
+                autoregress_steps = y.shape[1]
+                for step in range(autoregress_steps):
+                    out = self.model(edge_seq, edge_feature, dec_in)[:,-1]
+                    out = get_timeF(out).to(self.device)
+                    # print(dec_in[0, :, 0])
+                    # print(out[0, 0])
+                    dec_in = torch.cat((dec_in, out.unsqueeze(1)), dim=1) 
+
+                    # out = dec_in[0, :, 0]
+                    # yy = y[0, :step+2]
+                    # out = (out + 0.5) * 86399
+                    # yy = (yy + 0.5) * 86399
+                out = dec_in[:, 1:, 0]
+                    
+                y = ((y + 0.5) * 86399).detach().cpu().numpy()
+                out = ((out + 0.5) * 86399).detach().cpu().numpy()
+                y_mask = y_mask.detach().cpu().numpy()
+
+                for i in range(y.shape[0]):
+                    indices = np.nonzero(y_mask[i])
+                    pred = out[i][indices]
+                    true = y[i][indices]
+                    preds.append(pred)
+                    trues.append(true) 
+
+        print(pred)
+        print(true)
+        result = metric(preds, trues)
+        for k, value in result.items():
+            print(f'{k}: {value}')
+
+        return

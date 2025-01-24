@@ -2,6 +2,7 @@ import argparse
 import os
 import torch
 from exp.exp import Exp
+from exp.exp_ha import Exp_HA
 import random
 import numpy as np
 import time
@@ -15,7 +16,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Trajectory Generation')
     # basic config
-    parser.add_argument('--task_name', type=str, required=False, default='default',
+    parser.add_argument('--task_name', type=str, required=False, default='exp',
                         help='task name')
     parser.add_argument('--model', type=str, required=False, default='Transformer',
                         help='model name')
@@ -25,7 +26,7 @@ if __name__ == '__main__':
     # data loader
     parser.add_argument('--data', type=str, required=False, default='shenzhen_20201104',
                         help='data name')
-    parser.add_argument('--use_subset', type=bool, required=False, default=True)
+    parser.add_argument('--use_subset', type=bool, required=False, default=False, help='only available when task_name == exp')
     parser.add_argument('--checkpoints', type=str, default='./checkpoints/', help='location of model checkpoints')
     
     # model define
@@ -61,7 +62,11 @@ if __name__ == '__main__':
     # print_args(args)
 
     # setting record of experiments
-    exp = Exp(args)  # set experiments
+    exp_dict = {
+        'exp': Exp,
+        'exp_ha': Exp_HA,
+    }
+    exp = exp_dict[args.task_name](args)  # set experiments
 
     if not args.test:
         print('>>>>>>>start training : >>>>>>>>>>>>>>>>>>>>>>>>>>')

@@ -20,6 +20,7 @@ class TrajDataset(Dataset):
             .getOrCreate()
         self.spark.sparkContext.setLogLevel("ERROR")
         self.__read_data__()
+        self.spark.stop()
 
     def __read_data__(self):
         self.edge_df = self.spark.read.parquet(os.path.join(self.root_path, 'roadnet', 'edge.parquet'))
@@ -48,13 +49,9 @@ class TrajDataset(Dataset):
         traj_df = traj_df.withColumn("Minute", F.expr("transform(Minute, x -> x / 59 - 0.5)"))
         traj_df = traj_df.withColumn("Second", F.expr("transform(Second, x -> x / 59 - 0.5)"))
 
-
-
         self.timeF = traj_df.select("Time", "Hour", "Minute", "Second") \
             .rdd.map(lambda row: list(zip(row["Time"], row["Hour"], row["Minute"], row["Second"]))).collect()
         self.timeF = [torch.tensor(x) for x in self.timeF]
-
-        self.spark.stop()
 
     def __len__(self):
         return len(self.timeF)

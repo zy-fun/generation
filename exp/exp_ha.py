@@ -16,7 +16,7 @@ class Exp_HA(object):
         traj_df = pd.read_parquet(os.path.join(self.root_path, 'trajs', 'traj.parquet'))
 
         traj_df = traj_df.rename(columns={'Edge_ID': 'EdgeID'})
-        self.traj_df = traj_df[['EdgeID', 'Time', 'DepartureTime']]
+        self.traj_df = traj_df[['EdgeID', 'Time', 'DepartureTime', 'Hour']]
         self.edge_df = edge_df
 
         train_indices, val_indices, test_indices = split_indices(len(self.traj_df))
@@ -37,9 +37,11 @@ class Exp_HA(object):
         df = self.train_data
 
         df["TimeDiff"] = df["Time"].apply(lambda x: np.diff(x))
-        df = df[['EdgeID', 'TimeDiff']].explode(['EdgeID', 'TimeDiff'])
+        df['Hour'] = df['Hour'].apply(lambda x: np.array(x[:-1]))
+        df = df[['EdgeID', 'TimeDiff', 'Hour']].explode(['EdgeID', 'TimeDiff', 'Hour'])
         df['EdgeID'] = df['EdgeID'].astype(int)
         df['TimeDiff'] = df['TimeDiff'].astype(float)
+        df['Hour'] = df['Hour'].astype(int)
         df = df.merge(
             self.edge_df[['EdgeID', 'Length']],
             on='EdgeID',
@@ -58,12 +60,13 @@ class Exp_HA(object):
 
         self.length_dict = self.edge_df.set_index('EdgeID')['Length'].to_dict()
         self.time_dict = df.set_index('EdgeID')['TimeDiff'].to_dict()
+        # self.time_dicts_of_hour = df.groupby('Hour').apply(lambda x: x.set_index('EdgeID')['TimeDiff'].to_dict())
 
     def test(self):
         df = self.test_data
 
-        df['PredTimeDiff'] = df["EdgeID"].apply(lambda x: np.array([0] + [self.time_dict.get(i, self.length_dict[i] / self.global_avg_speed) for i in x]))
-        df['Pred'] = df.apply(lambda row: np.array([x + row['DepartureTime'] for x in row['PredTimeDiff']]), axis=1)
+        df['PredTimeDiff'] = df["EdgeID"].apply(lambda x: np.array([self.time_dict.get(i, self.length_dict[i] / self.global_avg_speed) for i in x]))
+        df['Pred'] = df.apply(lambda row: np.cumsum(np.insert(row['PredTimeDiff'], 0, row['DepartureTime'])), axis=1)
 
         preds = df['Pred'].tolist()
         trues = df['Time'].tolist()
@@ -74,4 +77,9 @@ class Exp_HA(object):
         for k, value in result.items():
             print(f'{k}: {value}')
 
+        preds = [x[-1:] for x in preds]
+        trues = [x[-1:] for x in trues]
+        result = metric(preds, trues)
+        for k, value in result.items():
+            print(f'{k}: {value}')
         return

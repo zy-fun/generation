@@ -20,13 +20,13 @@ if __name__ == '__main__':
                         help='task name')
     parser.add_argument('--model', type=str, required=False, default='Transformer',
                         help='model name')
-    parser.add_argument('--test', type=bool, required=False, default=True)
+    parser.add_argument('--test', required=False, default=False, action='store_true',)
     parser.add_argument('--load_model_path', type=str, required=False, default='checkpoints/2025-01-22_15-47-34/checkpoint.pth', help='only available when test is True')
     
     # data loader
     parser.add_argument('--data', type=str, required=False, default='shenzhen_20201104',
                         help='data name')
-    parser.add_argument('--use_subset', type=bool, required=False, default=False, help='only available when task_name == exp')
+    parser.add_argument('--use_subset', required=False, default=False, action='store_true', help='only available when task_name == exp')
     parser.add_argument('--checkpoints', type=str, default='./checkpoints/', help='location of model checkpoints')
     
     # model define
@@ -59,7 +59,7 @@ if __name__ == '__main__':
     print(torch.cuda.is_available())
 
     print('Args in experiment:')
-    # print_args(args)
+    print(args)
 
     # setting record of experiments
     exp_dict = {

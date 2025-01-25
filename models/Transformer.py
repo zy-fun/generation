@@ -83,12 +83,7 @@ class Model(nn.Module):
         return dec_out
 
     def forward(self, enc_seq, enc_feature, dec_in):
-        # Embedding
-        enc_out = self.enc_embedding(enc_seq, enc_feature)
-        enc_out, attns = self.encoder(enc_out, attn_mask=None)
+        enc_out = self.encode(enc_seq, enc_feature)
 
-        dec_out = self.dec_embedding(dec_in)
-        dec_out = self.decoder(dec_out, enc_out, x_mask=None, cross_mask=None)
-        if self.configs.c_out == 1:
-            dec_out = dec_out.squeeze(-1)
+        dec_out = self.decode(enc_out, dec_in)
         return dec_out

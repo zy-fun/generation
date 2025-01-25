@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 import time
 import numpy as np
-from models import Transformer
+from models import Transformer, VAETransformer
 from tqdm import tqdm
 from datetime import datetime, timedelta
 from utils.load_params import load_embeddings
@@ -26,6 +26,7 @@ class Exp(object):
     def _build_model(self):
         self.model_dict = {
             'Transformer': Transformer,
+            'VAETransformer': VAETransformer,
         }
         model = self.model_dict[self.args.model].Model
         if self.args.use_pretrained:
@@ -179,6 +180,9 @@ class Exp(object):
                 # autoregressive
                 autoregress_steps = y.shape[1]
                 for step in range(autoregress_steps):
+                    # if self.args.model == 'VAETransformer':
+                    #     out = self.model.predict(edge_seq, edge_feature, dec_in)[:,-1]
+                    # else:
                     out = self.model(edge_seq, edge_feature, dec_in)[:,-1]
                     out = get_timeF(out).to(self.device)
                     # print(dec_in[0, :, 0])

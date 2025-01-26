@@ -77,7 +77,7 @@ class Exp(object):
         with torch.no_grad():
             for i, (edge_seq, edge_feature, timeF, y, y_mask) in tqdm(enumerate(vali_loader), desc='Batches'):
                 edge_seq = edge_seq.to(self.device)
-                edge_feature = edge_feature.to(self.device)
+                edge_feature = edge_feature[:, :, :self.args.enc_dim].to(self.device)
                 timeF = timeF.to(self.device)
                 y = y.to(self.device)
                 y_mask = y_mask.to(self.device)
@@ -119,7 +119,7 @@ class Exp(object):
                 model_optim.zero_grad()
 
                 edge_seq = edge_seq.to(self.device)
-                edge_feature = edge_feature.to(self.device)
+                edge_feature = edge_feature[:, :, :self.args.enc_dim].to(self.device)
                 timeF = timeF.to(self.device)
                 y = y.to(self.device)
                 y_mask = y_mask.to(self.device)
@@ -172,7 +172,7 @@ class Exp(object):
         with torch.no_grad():
              for i, (edge_seq, edge_feature, timeF, y, y_mask) in tqdm(enumerate(test_loader)):
                 edge_seq = edge_seq.to(self.device)
-                edge_feature = edge_feature.to(self.device)
+                edge_feature = edge_feature[:, :, :self.args.enc_dim].to(self.device)
                 dec_in = timeF.to(self.device)[:, 0, :].unsqueeze(1)
                 y = y.to(self.device)
                 y_mask = y_mask.to(self.device)

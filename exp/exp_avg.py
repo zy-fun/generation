@@ -15,7 +15,6 @@ class Exp_AVG(object):
         edge_df = pd.read_parquet(os.path.join(self.root_path, 'roadnet', 'edge.parquet'))
         traj_df = pd.read_parquet(os.path.join(self.root_path, 'trajs', 'traj.parquet'))
 
-        traj_df = traj_df.rename(columns={'Edge_ID': 'EdgeID'})
         self.traj_df = traj_df[['EdgeID', 'Time', 'DepartureTime', 'Hour']]
         self.edge_df = edge_df
 

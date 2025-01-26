@@ -212,4 +212,9 @@ class Exp(object):
         for k, value in result.items():
             print(f'{k}: {value}')
 
+        preds = [x[-1:] for x in preds]
+        trues = [x[-1:] for x in trues]
+        result = metric(preds, trues)
+        for k, value in result.items():
+            print(f'{k}: {value}')
         return

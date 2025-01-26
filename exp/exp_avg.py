@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 from utils.metrics import metric
 
-class Exp_HA(object):
+class Exp_AVG(object):
     def __init__(self, args):
         self.args = args
         self.__read_data__()
@@ -60,12 +60,17 @@ class Exp_HA(object):
 
         self.length_dict = self.edge_df.set_index('EdgeID')['Length'].to_dict()
         self.time_dict = df.set_index('EdgeID')['TimeDiff'].to_dict()
-        # self.time_dicts_of_hour = df.groupby('Hour').apply(lambda x: x.set_index('EdgeID')['TimeDiff'].to_dict())
+        self.time_dicts_of_hour = df.groupby('Hour').apply(lambda x: x.set_index('EdgeID')['TimeDiff'].to_dict())
 
     def test(self):
         df = self.test_data
+        by_hour = self.args.avg_by_hour
 
-        df['PredTimeDiff'] = df["EdgeID"].apply(lambda x: np.array([self.time_dict.get(i, self.length_dict[i] / self.global_avg_speed) for i in x]))
+        if by_hour:
+            df['PredTimeDiff'] = df.apply(lambda row: np.array([self.time_dicts_of_hour[row['Hour'][0]].get(i, 
+                self.time_dict.get(i, self.length_dict[i] / self.global_avg_speed)) for i in row['EdgeID']]), axis=1)
+        else:
+            df['PredTimeDiff'] = df["EdgeID"].apply(lambda x: np.array([self.time_dict.get(i, self.length_dict[i] / self.global_avg_speed) for i in x]))
         df['Pred'] = df.apply(lambda row: np.cumsum(np.insert(row['PredTimeDiff'], 0, row['DepartureTime'])), axis=1)
 
         preds = df['Pred'].tolist()

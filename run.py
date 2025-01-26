@@ -2,7 +2,7 @@ import argparse
 import os
 import torch
 from exp.exp import Exp
-from exp.exp_ha import Exp_HA
+from exp.exp_avg import Exp_AVG
 import random
 import numpy as np
 import time
@@ -22,6 +22,7 @@ if __name__ == '__main__':
                         help='model name')
     parser.add_argument('--test', required=False, default=False, action='store_true',)
     parser.add_argument('--load_model_path', type=str, required=False, default='checkpoints/2025-01-22_15-47-34/checkpoint.pth', help='only available when test is True')
+    parser.add_argument('--avg_by_hour', required=False, default=False, action='store_true', help='only available when task_name == exp_avg')
     
     # data loader
     parser.add_argument('--data', type=str, required=False, default='shenzhen_20201104',
@@ -64,7 +65,7 @@ if __name__ == '__main__':
     # setting record of experiments
     exp_dict = {
         'exp': Exp,
-        'exp_ha': Exp_HA,
+        'exp_avg': Exp_AVG,
     }
     exp = exp_dict[args.task_name](args)  # set experiments
 
